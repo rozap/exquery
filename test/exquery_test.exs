@@ -55,7 +55,7 @@ defmodule ExqueryTest do
     ]
   end
 
-  test "can parse a K:V attribute string" do
+  test "can parse an attribute string" do
     assert E.to_attributes("class='hel\"lo'", []) == {
       "", 
       [{"class", "hel\"lo"}]
@@ -90,6 +90,18 @@ defmodule ExqueryTest do
       ]
     }
 
+    assert E.to_attributes(
+      "class='hello world' selected checked", 
+      []
+    ) == {
+      "",
+      [
+        {"checked", ""},
+        {"selected", ""},
+        {"class", "hello world"}
+      ]
+    }
+
   end
 
   test "can parse attributes" do
@@ -99,6 +111,36 @@ defmodule ExqueryTest do
       {:open_tag, "a", [{"href", "google dot com"}]},
         {:text, "hello", []},
       {:close_tag, "a", []}
+    ]
+  end
+
+  test "can parse a doctype" do
+    assert E.tokenize(String.strip("""
+      <!DOCTYPE html>
+      <html>
+        <body>
+        </body>
+      </html>
+    """)) == [
+      {:doctype, "DOCTYPE", [{"html", ""}]},
+      {:open_tag, "html", []},
+        {:open_tag, "body", []},
+        {:close_tag, "body", []},
+      {:close_tag, "html", []}
+    ]
+
+    assert E.tokenize(String.strip("""
+      <!DOCTYPE>
+      <html>
+        <body>
+        </body>
+      </html>
+    """)) == [
+      {:doctype, "DOCTYPE", []},
+      {:open_tag, "html", []},
+        {:open_tag, "body", []},
+        {:close_tag, "body", []},
+      {:close_tag, "html", []}
     ]
   end
 
