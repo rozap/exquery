@@ -1,25 +1,35 @@
 defmodule Exquery do
-
+  require Exquery.Helpers
+  import Exquery.Helpers
   @spaces [" ", "\n", "\t", "\r"]
 
-  defp push_token({:text, text, attrs} = token, acc) do
+  defp push_state({:text, text, attrs} = state, acc) do
     case String.strip(text) do
       "" -> acc
-      _ -> [token | acc]
+      _ -> [state | acc]
     end
   end
-  defp push_token(token, acc), do: [token | acc]
+  defp push_state(state, acc), do: [state | acc]
 
 
 
   def to_attributes("'"  <> r, :open_sq, acc, attrs),     do: to_attributes(r, [acc | attrs])
   def to_attributes("\"" <> r, :open_dq, acc, attrs),     do: to_attributes(r, [acc | attrs])
-  def to_attributes(" "  <> r, :open_sp, acc, attrs),     do: to_attributes(r, [acc | attrs])
 
-  def to_attributes("="  <> r, :key, acc, attrs),         do: to_attributes(r, :open_sp,  acc, attrs)
-  def to_attributes(" "  <> r, :key, acc, attrs),         do: to_attributes(r, [acc | attrs])
-  def to_attributes(" "  <> r, :open_key, acc, attrs),    do: to_attributes(r, :open_key, acc, attrs)
+  when_space :to_attributes, [:open_sp], do: to_attributes(r, [acc | attrs])
+
+  def to_attributes("="  <> r, mode, acc, attrs) when mode in [:key, :close_key], do: to_attributes(r, :open_sp,  acc, attrs)
+
+
+  when_space :to_attributes, [:key, :close_key], do: to_attributes(r, :close_key, acc, attrs)
+  when_space :to_attributes, [:open_key],        do: to_attributes(r, :open_key,  acc, attrs)
+
+
+
   def to_attributes(r        , :open_key, acc, attrs),    do: to_attributes(r, :key,      acc, attrs)
+  def to_attributes(r        , :close_key, acc, attrs),   do: to_attributes(r, [acc| attrs])
+
+
 
   def to_attributes("'"  <> r, :open_sp, acc, attrs),     do: to_attributes(r, :open_sq,  acc, attrs)
   def to_attributes("\"" <> r, :open_sp, acc, attrs),     do: to_attributes(r, :open_dq,  acc, attrs)
@@ -40,34 +50,36 @@ defmodule Exquery do
 
   defp attributes(r, {tag, text, attrs} = token, acc) do
     {r, attrs} = to_attributes(r, :open_key, {"", ""}, attrs)
-    ff({tag, text, attrs}, r, acc)
+    ff(r, {tag, text, attrs}, acc)
   end
 
 
-  defp ff({:comment,   _, _} = token, "-->" <> r, acc), do: {r, push_token(token, acc)}
-  defp ff({:close_tag, _, _} = token, ">"   <> r, acc), do: {r, push_token(token, acc)}
-  defp ff({:open_tag,  _, _} = token, " "   <> r, acc), do: attributes(r, token, acc)
-  defp ff({:doctype,   _, _} = token, " "   <> r, acc), do: attributes(r, token, acc)
-  defp ff({:open_tag,  _, _} = token, ">"   <> r, acc), do: {r, push_token(token, acc)}
-  defp ff({:doctype,   _, _} = token, ">"   <> r, acc), do: {r, push_token(token, acc)}
+  ff_until "-->", :comment,   do: {r, push_state(state, acc)}
+  ff_until ">"  , :close_tag, do: {r, push_state(state, acc)}
+  ff_until :spaces, :open_tag,  do: attributes(r, state, acc)
+  ff_until :spaces, :doctype,   do: attributes(r, state, acc)
+  ff_until ">"  , :open_tag,  do: {r, push_state(state, acc)}
+  ff_until ">"  , :doctype,   do: {r, push_state(state, acc)}
 
+  ff_until "<"  , :any, do: {all, push_state(state, acc)}
 
-  defp ff(token, "<" <> _ = r, acc), do: {r, push_token(token, acc)}
-
-  defp ff({kind, contents, attrs}, <<head::binary-size(1), rest::binary>>, acc) do
-    ff({kind, contents <> head, attrs}, rest, acc)
+  ff_until :any, :any do
+    {kind, contents, attrs} = state
+    ff(r, {kind, contents <> head, attrs},  acc)
   end
 
-  defp ff(token, the_end, acc) do
-    {the_end, push_token(token, acc)}
+  defp ff(the_end, state, acc) do 
+    {the_end, push_state(state, acc)}
   end
 
-  defp tok("<!--" <> r, acc), do: tokenize(ff({:comment,   "", []}, r, acc))
-  defp tok("</"   <> r, acc), do: tokenize(ff({:close_tag, "", []}, String.strip(r), acc))
-  defp tok("<!"   <> r, acc), do: tokenize(ff({:doctype,   "", []}, String.strip(r), acc))
-  defp tok("<"    <> r, acc), do: tokenize(ff({:open_tag,  "", []}, String.strip(r), acc))
+  # when_tok "<--", {:comment, "", []}
+
+  defp tok("<!--" <> r, acc), do: tokenize(ff(r,               {:comment,   "", []},  acc))
+  defp tok("</"   <> r, acc), do: tokenize(ff(String.strip(r), {:close_tag, "", []},  acc))
+  defp tok("<!"   <> r, acc), do: tokenize(ff(String.strip(r), {:doctype,   "", []},  acc))
+  defp tok("<"    <> r, acc), do: tokenize(ff(String.strip(r), {:open_tag,  "", []},  acc))
   defp tok(<<head::binary-size(1), r::binary>>, acc) do
-    tokenize(ff({:text, head, []}, r, acc))
+    tokenize(ff(r, {:text, head, []}, acc))
   end
   defp tok("", acc) do
     Enum.reverse(acc)
