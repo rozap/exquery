@@ -22,6 +22,9 @@ defmodule ExqueryTest do
       {:text, "hello >   ", []},
       {:close_tag, "div", []}
     ]
+  end
+
+  test "can parse nested html" do
 
     assert E.tokenize(String.strip("""
       <div>hello <italic>world</italic></div>

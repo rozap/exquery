@@ -2,15 +2,18 @@ defmodule Exquery do
   require Exquery.Helpers
   import Exquery.Helpers
   @spaces [" ", "\n", "\t", "\r"]
+  @new_tag {{:doc, :none}, :none, :none}
 
-  defp push_state({{:doc, :text}, value, attrs} = state, acc) do
+  defp push_tag({:none, :none, :none}, acc), do: acc
+  defp push_tag({:text, value, attrs} = tag, acc) do
     case String.strip(value) do
       "" -> acc
-      _ -> [{:text, value, attrs} | acc]
+      _ -> [tag | acc]
     end
   end
-  defp push_state({{:doc, tag}, value, attrs}, acc) do 
-    [{tag, value, attrs} | acc]
+  defp push_tag({_, _, _} = tag, acc) do 
+    IO.puts "Adding #{inspect tag}"
+    [tag | acc]
   end
 
   defp push_attrs({key, val} = current, acc) do
@@ -51,43 +54,42 @@ defmodule Exquery do
 
   defp attributes(r, {tag, text, attrs} = token, acc) do
     {r, attrs} = ff(r, {{:attrs, :open_key}, {"", ""}, nil}, attrs)
-    ff(r, {tag, text, attrs}, acc)
+    ff(r, {{:doc, tag}, text, attrs}, acc)
   end
 
 
-  ff_until "-->",   {:doc, :comment},   do: {r, push_state(state, acc)}
-  ff_until ">"  ,   {:doc, :close_tag}, do: {r, push_state(state, acc)}
-  ff_until :spaces, {:doc, :open_tag},  do: attributes(r, state, acc)
-  ff_until :spaces, {:doc, :doctype},   do: attributes(r, state, acc)
-  ff_until ">"  ,   {:doc, :open_tag},  do: {r, push_state(state, acc)}
-  ff_until ">"  ,   {:doc, :doctype},   do: {r, push_state(state, acc)}
-  ff_until "<"  ,   {:doc, :any}, do: {all, push_state(state, acc)}
+  ff_until "-->",   {:doc, :comment},   do: ff(r, @new_tag, push_tag({:comment, current, attributes}, acc))
+  ff_until ">"  ,   {:doc, :close_tag}, do: ff(r, @new_tag, push_tag({:close_tag, current, attributes}, acc))
+  ff_until :spaces, {:doc, :open_tag},  do: attributes(r, {:open_tag, current, attributes}, acc)
+  ff_until :spaces, {:doc, :doctype},   do: attributes(r, {:doctype, current, attributes}, acc)
+  ff_until ">"  ,   {:doc, :open_tag},  do: ff(r, @new_tag, push_tag({:open_tag, current, attributes}, acc))
+  ff_until ">"  ,   {:doc, :doctype},   do: ff(r, @new_tag, push_tag({:doctype, current, attributes}, acc))
 
+  ff_until "<!--", {:doc, :none}, do: ff(r,               {{:doc, :comment},   "", []},  acc)
+  ff_until "</"  , {:doc, :none}, do: ff(String.strip(r), {{:doc, :close_tag}, "", []},  acc)
+  ff_until "<!"  , {:doc, :none}, do: ff(String.strip(r), {{:doc, :doctype},   "", []},  acc)
+  ff_until "<"   , {:doc, :none}, do: ff(String.strip(r), {{:doc, :open_tag},  "", []},  acc)
+  ff_until :any  , {:doc, :none}, do: ff(r, {{:doc, :text}, head, []}, acc)
+
+
+  ff_until "<"  ,   {:doc, :any} do
+    {:doc, tag} = mode
+    ff(all, @new_tag, push_tag({tag, current, attributes}, acc))
+  end
   ff_until :any, {:doc, :any} do
-    {kind, contents, attrs} = state
-    ff(r, {kind, contents <> head, attrs},  acc)
+    ff(r, {mode, current <> head, attributes},  acc)
   end
 
-  defp ff(the_end, state, acc) do 
-    {the_end, push_state(state, acc)}
-  end
-
-  # when_tok "<--", {:comment, "", []}
-
-  defp tok("<!--" <> r, acc), do: tokenize(ff(r,               {{:doc, :comment},   "", []},  acc))
-  defp tok("</"   <> r, acc), do: tokenize(ff(String.strip(r), {{:doc, :close_tag}, "", []},  acc))
-  defp tok("<!"   <> r, acc), do: tokenize(ff(String.strip(r), {{:doc, :doctype},   "", []},  acc))
-  defp tok("<"    <> r, acc), do: tokenize(ff(String.strip(r), {{:doc, :open_tag},  "", []},  acc))
-  defp tok(<<head::binary-size(1), r::binary>>, acc) do
-    tokenize(ff(r, {{:doc, :text}, head, []}, acc))
-  end
-  defp tok("", acc) do
-    Enum.reverse(acc)
+  defp ff("", mode, acc) do 
+    IO.puts "END"
+    {{:doc, mode}, current, attributes} = mode
+    push_tag({mode, current, attributes}, acc) |> Enum.reverse
   end
 
 
   def tokenize({text, acc}) do
-    tok(text, acc)
+    IO.puts "Tokenize #{text}"
+    ff(text, @new_tag, acc)
   end
 
   def tokenize(text) do
