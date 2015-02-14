@@ -73,7 +73,9 @@ defmodule ExqueryTest do
       "", 
       [{"class", "hel\"lo"}]
     }
+  end
 
+  test "can parse a single and double quote attribute string" do
     assert E.to_attributes(
       "class='hello world' id=\"foo-bar\"", 
       []
@@ -84,7 +86,9 @@ defmodule ExqueryTest do
         {"class", "hello world"}
       ]
     }
+  end
 
+  test "can parse an unquoted attribute string" do
     assert E.to_attributes("class=foo id=bar something=else", []) == {
       "",
       [
@@ -93,7 +97,9 @@ defmodule ExqueryTest do
         {"class", "foo"}
       ]
     }
+  end
 
+  test "can parse an attribute string without space delimiting" do
     assert E.to_attributes("class=\"foo\"id='bar' something='else>", []) == {
       ">",
       [
@@ -102,7 +108,9 @@ defmodule ExqueryTest do
         {"class", "foo"}
       ]
     }
+  end
 
+  test "can parse a key attribute string with no values, line break delimited" do
     assert E.to_attributes(
       " 
       selected 
@@ -113,10 +121,11 @@ defmodule ExqueryTest do
       [
         {"checked", ""},
         {"selected", ""},
-        # {"class", "hello world"}
       ]
     }
+  end
 
+  test "can parse a key attribute string space delimited, some with values" do
     assert E.to_attributes(
       "class='hello world' selected checked", 
       []
@@ -154,11 +163,13 @@ defmodule ExqueryTest do
         {:close_tag, "body", []},
       {:close_tag, "html", []}
     ]
+  end
 
+  test "can parse a weird doctype" do
     assert E.tokenize(String.strip("""
       <!DOCTYPE
 
-      html
+          html
       >
       <html>
         <body>
