@@ -188,4 +188,38 @@ defmodule ExqueryTest do
   end
 
 
+  test "can handle embedded CSS" do
+    assert E.tokenize(String.strip("""
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <style type="text/css">
+            .foo bar {
+              border: 1px solid green;
+            }
+
+            .bar>baz {
+              position:relative;
+            }
+
+            /* </style> */
+
+            .bar > baz {
+              position: fixed !important;
+            }
+          </style>
+        </body>
+      </html>
+    """)) == [
+      {:doctype, "DOCTYPE", [{"html", ""}]}, 
+      {:open_tag, "html", []},
+        {:open_tag, "body", []}, 
+          {:open_style, "", [{"type", "text/css"}]},
+            {:css, "\n        .foo bar {\n          border: 1px solid green;\n        }\n\n        .bar>baz {\n          position:relative;\n        }\n\n        /* </style> */\n\n        .bar > baz {\n          position: fixed !important;\n        }\n      ", []}, 
+          {:close_style, "", []}, 
+        {:close_tag, "body", []},
+      {:close_tag, "html", []}]
+  end
+
+
 end

@@ -5,12 +5,13 @@ defmodule Exquery.Helpers do
     # IO.puts "match #{inspect tok} in #{inspect mode}"
   end
 
-  defmacro ff_until(:spaces, mode, body) do
-    modes = List.wrap(mode)
+  defmacro ff_until_in(tokens, match_mode, body) do
+    {mode_type, match_state} = match_mode
+    IO.inspect match_mode
     quote do
-      defp ff(<<head::binary-size(1), var!(r)::binary>> = var!(all) = all, {mode, var!(current), var!(attributes)} = var!(state), var!(acc)) when head in @spaces and (mode in unquote(modes) or mode == :any) do
-        u = String.at(all, 0)
-        log(u, unquote(mode))
+      defp ff(<<head::binary-size(1), var!(r)::binary>> = var!(all) = all, {{unquote(mode_type), mode_state} = var!(mode), var!(current), var!(attributes)} = var!(state), var!(acc)) when (head in unquote(tokens)) and (unquote(match_state) == mode_state or unquote(match_state) == :any) do
+        # u = String.at(all, 0)
+        # log(u, unquote(mode))
         unquote(body[:do])
       end
     end
