@@ -69,28 +69,56 @@ defmodule Exquery do
 
 
   #Reached the "<style>" ">" character, so move to css mode
-  ff_until ">", {:doc, :open_style}, do: ff(r, new_token(:css), push_tag({:open_style, current, attributes}, acc))
+  ff_until ">", {:doc, :open_style},  do: ff(r, new_token(:css), push_tag({:open_style,  current, attributes}, acc))
+  ff_until ">", {:doc, :open_script}, do: ff(r, new_token(:js),  push_tag({:open_script, current, attributes}, acc))
 
   #For all these modes, a ">" represents a transition to a new mode
   Enum.each([:close_tag, :open_tag, :doctype], fn mode ->
     ff_until ">", {:doc, unquote(mode)}, do: ff(r, new_token(:none), push_tag({unquote(mode), current, attributes}, acc))
   end)
 
-  Enum.each([:open_tag, :doctype, :open_style], fn mode ->
+  Enum.each([:open_tag, :doctype, :open_style, :open_script], fn mode ->
     ff_until_in @spaces, {:doc, unquote(mode)},  do: attributes(r, {unquote(mode), current, attributes}, acc)
+  end)
+
+  Enum.each([:css_comment, :js_comment, :js_comment_sl, :js_comment_dq, :js_comment_sq], fn comment -> 
+    ff_until "</", {:doc, unquote(comment)}, do: ff(r, {{:doc, unquote(comment)}, current <> "</", attributes}, acc)
+    ff_until "<", {:doc, unquote(comment)},  do: ff(r, {{:doc, unquote(comment)}, current <> "<" , attributes}, acc) 
   end)
 
 
   # CSS handling. Ignore tags between comments.
-  ff_until "/*",      {:doc, :css},         do: ff(all, {{:doc, :css_comment}, current, attributes} ,acc)
-  ff_until "*/",      {:doc, :css_comment}, do: ff(all, {{:doc, :css}, current, attributes} ,acc)
-  ff_until "</",      {:doc, :css_comment}, do: ff(r,   {{:doc, :css_comment}, current <> "</", attributes}, acc)
+  ff_until "/*", {:doc, :css},         do: ff(all, {{:doc, :css_comment}, current, attributes} ,acc)
+  ff_until "*/", {:doc, :css_comment}, do: ff(all, {{:doc, :css}, current, attributes} ,acc)
+
+  
+
   ff_until ">",       {:doc, :close_style}, do: ff(r, new_token(:none), push_tag({:close_style, current, attributes}, acc))
-  ff_until "</style", {:doc, :css},         do: ff(r, new_token(:close_style), push_tag({:css, current, attributes}, acc)) 
+  ff_until "</style", {:doc, :css},         do: ff(r, new_token(:close_style), push_tag({:css, current, attributes}, acc))
   ff_until "<style",  {:doc, :any} do 
     {:doc, tag} = mode
     ff(r, {{:doc, :open_style}, "", []}, push_tag({tag, current, attributes}, acc))
   end
+
+  #JS handling. Ignore tags between comments.
+  ff_until "/*", {:doc, :js},               do: ff(all, {{:doc, :js_comment},    current, attributes}, acc)
+  ff_until "*/", {:doc, :js_comment},       do: ff(all, {{:doc, :js},            current, attributes}, acc)
+  ff_until "//", {:doc, :js},               do: ff(all, {{:doc, :js_comment_sl}, current, attributes}, acc)
+  ff_until "\n", {:doc, :js_comment_sl},    do: ff(all, {{:doc, :js},            current, attributes}, acc)
+  ff_until "\"",   {:doc, :js},             do: ff(r,   {{:doc, :js_comment_dq}, current <> "\"", attributes}, acc)
+  ff_until "\\\"", {:doc, :js_comment_dq},  do: ff(r,   {{:doc, :js_comment_dq}, current <> "\\\"", attributes}, acc)
+  ff_until "\"",   {:doc, :js_comment_dq},  do: ff(r,   {{:doc, :js}, current <> "\"", attributes}, acc)
+  ff_until "\\'", {:doc, :js_comment_sq},   do: ff(r,   {{:doc, :js_comment_sq}, current <> "\\'", attributes}, acc)
+  ff_until "'",   {:doc, :js},              do: ff(r,   {{:doc, :js_comment_sq}, current <> "'", attributes}, acc)
+  ff_until "'",   {:doc, :js_comment_sq},   do: ff(r,   {{:doc, :js}, current <> "'", attributes}, acc)
+
+
+  ff_until "<script", {:doc, :any} do
+    {:doc, tag} = mode
+    ff(r, {{:doc, :open_script}, "", []}, push_tag({tag, current, attributes}, acc))
+  end
+  ff_until ">",        {:doc, :close_script}, do: ff(r, new_token(:none), push_tag({:close_script, current, attributes}, acc))
+  ff_until "</script", {:doc, :js},           do: ff(r, new_token(:close_script), push_tag({:js, current, attributes}, acc)) 
 
 
   ff_until "<!--", {:doc, :none}, do: ff(r,               {{:doc, :comment},   "", []},  acc)
