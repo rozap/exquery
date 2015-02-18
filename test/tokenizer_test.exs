@@ -1,19 +1,7 @@
-defmodule ExqueryTest do
+defmodule ExqueryTest.Tokenizer do
   use ExUnit.Case
   alias Exquery, as: E
   
-
-  def foo(<<head::binary-size(1), rest::binary>>) when head == "f" do
-    :ok
-  end
-  def foo(o) do
-    o
-  end
-
-  test "foo" do
-    IO.inspect foo("foo")
-  end
-
 
   test "can tokenize basic html" do
     assert E.tokenize("<div>hello >   </div>") ==
@@ -58,6 +46,35 @@ defmodule ExqueryTest do
         {:close_tag, "div", []}
       ]
   end
+
+  test "can handle self closing tags" do
+    assert E.tokenize(String.strip("""
+      <div>
+        <img src="foo.jpg">
+        <input value="hello">
+      </div>
+    """)) == [
+      {:open_tag, "div", []},
+        {:self_closing, "img", [{"src", "foo.jpg"}]},
+        {:self_closing, "input", [{"value", "hello"}]},
+      {:close_tag, "div", []}
+    ]
+  end
+
+  test "can handle closed self closing tags" do
+    assert E.tokenize(String.strip("""
+      <div>
+        <img src="foo.jpg"/>
+        <input value="hello"/>
+      </div>
+    """)) == [
+      {:open_tag, "div", []},
+        {:self_closing, "img", [{"src", "foo.jpg"}]},
+        {:self_closing, "input", [{"value", "hello"}]},
+      {:close_tag, "div", []}
+    ]
+  end
+
 
   test "can parse a comment" do
     assert E.tokenize(String.strip("""

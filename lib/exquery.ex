@@ -1,11 +1,32 @@
 defmodule Exquery do
   require Exquery.Helpers
   import Exquery.Helpers
+  alias Exquery.Tree
   @spaces [" ", "\n", "\t", "\r"]
   #yes this doesn't handle all cases..like StYlE
   #need a better way to deal with cases
   @styles ["<style", "<STYLE"]
   @new_token {{:doc, :none}, :none, :none}
+
+  @self_closing [
+    "area",
+    "base",
+    "br",
+    "col",
+    "command",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "keygen",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr"
+  ]
+
 
   defp new_token(mode) do
     {{:doc, mode}, "", []}
@@ -33,6 +54,7 @@ defmodule Exquery do
   ff_until :any,        {:attrs, :close_key}, do: to_attributes(all, push_attrs(current, acc))
   ff_until "'" ,        {:attrs, :open_sp},   do: ff(r,   {{:attrs, :open_sq}, current, nil}, acc)
   ff_until "\"",        {:attrs, :open_sp},   do: ff(r,   {{:attrs, :open_dq}, current, nil}, acc)
+  ff_until "/>",        {:attrs, :any},       do: {">" <> r, push_attrs(current, acc)}
   ff_until ">",         {:attrs, :any},       do: {all, push_attrs(current, acc)}
 
   defp ff("", {{:attrs, _}, current, _}, acc), do: {"", push_attrs(current, acc)}
@@ -73,11 +95,11 @@ defmodule Exquery do
   ff_until ">", {:doc, :open_script}, do: ff(r, new_token(:js),  push_tag({:open_script, current, attributes}, acc))
 
   #For all these modes, a ">" represents a transition to a new mode
-  Enum.each([:close_tag, :open_tag, :doctype], fn mode ->
+  Enum.each([:close_tag, :open_tag, :doctype, :self_closing], fn mode ->
     ff_until ">", {:doc, unquote(mode)}, do: ff(r, new_token(:none), push_tag({unquote(mode), current, attributes}, acc))
   end)
 
-  Enum.each([:open_tag, :doctype, :open_style, :open_script], fn mode ->
+  Enum.each([:open_tag, :doctype, :open_style, :open_script, :self_closing], fn mode ->
     ff_until_in @spaces, {:doc, unquote(mode)},  do: attributes(r, {unquote(mode), current, attributes}, acc)
   end)
 
@@ -101,16 +123,16 @@ defmodule Exquery do
   end
 
   #JS handling. Ignore tags between comments.
-  ff_until "/*", {:doc, :js},               do: ff(all, {{:doc, :js_comment},    current, attributes}, acc)
-  ff_until "*/", {:doc, :js_comment},       do: ff(all, {{:doc, :js},            current, attributes}, acc)
-  ff_until "//", {:doc, :js},               do: ff(all, {{:doc, :js_comment_sl}, current, attributes}, acc)
-  ff_until "\n", {:doc, :js_comment_sl},    do: ff(all, {{:doc, :js},            current, attributes}, acc)
+  ff_until "/*",   {:doc, :js},             do: ff(all, {{:doc, :js_comment},    current, attributes}, acc)
+  ff_until "*/",   {:doc, :js_comment},     do: ff(all, {{:doc, :js},            current, attributes}, acc)
+  ff_until "//",   {:doc, :js},             do: ff(all, {{:doc, :js_comment_sl}, current, attributes}, acc)
+  ff_until "\n",   {:doc, :js_comment_sl},  do: ff(all, {{:doc, :js},            current, attributes}, acc)
   ff_until "\"",   {:doc, :js},             do: ff(r,   {{:doc, :js_comment_dq}, current <> "\"", attributes}, acc)
   ff_until "\\\"", {:doc, :js_comment_dq},  do: ff(r,   {{:doc, :js_comment_dq}, current <> "\\\"", attributes}, acc)
   ff_until "\"",   {:doc, :js_comment_dq},  do: ff(r,   {{:doc, :js}, current <> "\"", attributes}, acc)
-  ff_until "\\'", {:doc, :js_comment_sq},   do: ff(r,   {{:doc, :js_comment_sq}, current <> "\\'", attributes}, acc)
-  ff_until "'",   {:doc, :js},              do: ff(r,   {{:doc, :js_comment_sq}, current <> "'", attributes}, acc)
-  ff_until "'",   {:doc, :js_comment_sq},   do: ff(r,   {{:doc, :js}, current <> "'", attributes}, acc)
+  ff_until "\\'",  {:doc, :js_comment_sq},  do: ff(r,   {{:doc, :js_comment_sq}, current <> "\\'", attributes}, acc)
+  ff_until "'",    {:doc, :js},             do: ff(r,   {{:doc, :js_comment_sq}, current <> "'", attributes}, acc)
+  ff_until "'",    {:doc, :js_comment_sq},  do: ff(r,   {{:doc, :js}, current <> "'", attributes}, acc)
 
 
   ff_until "<script", {:doc, :any} do
@@ -120,6 +142,9 @@ defmodule Exquery do
   ff_until ">",        {:doc, :close_script}, do: ff(r, new_token(:none), push_tag({:close_script, current, attributes}, acc))
   ff_until "</script", {:doc, :js},           do: ff(r, new_token(:close_script), push_tag({:js, current, attributes}, acc)) 
 
+  Enum.each(@self_closing, fn tag ->
+    ff_until "<#{unquote(tag)}", {:doc, :none}, do: ff(r, {{:doc, :self_closing}, unquote(tag), []}, acc)
+  end)
 
   ff_until "<!--", {:doc, :none}, do: ff(r,               {{:doc, :comment},   "", []},  acc)
   ff_until "</"  , {:doc, :none}, do: ff(String.strip(r), {{:doc, :close_tag}, "", []},  acc)
@@ -146,5 +171,12 @@ defmodule Exquery do
 
   def tokenize({text, acc}), do: ff(text, @new_token, acc)
   def tokenize(text), do: tokenize({text, []})
+
+
+  def tree(text) do
+    text
+    |> tokenize
+    |> Tree.to_tree
+  end
 
 end

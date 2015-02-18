@@ -1,5 +1,4 @@
 defmodule Exquery.Helpers do
-  @spaces [" ", "\n", "\t", "\r"]
 
   def log(tok, mode) do
     # IO.puts "match #{inspect tok} in #{inspect mode}"
