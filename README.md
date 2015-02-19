@@ -20,12 +20,12 @@ A simple Elixir DOM library for building a tree from an HTML string and then sel
 ```
 
 This evaluates to:
-```
+```elixir
 {{:tag, "li", [{"class", "one-fish"}]}, [{:text, "Hello", []}]}
 ```
 
 Similarly, you can select all elements
-```
+```elixir
 """
 <div class="red-fish">
   <ul class="blue-fish">
@@ -39,7 +39,7 @@ Similarly, you can select all elements
 ```
 
 This evaluates to:
-```
+```elixir
 .[{{:tag, "li", [{"class", "one-fish"}]}, [{:text, "Hello", []}]},
  {{:tag, "li", [{"class", "two-fish"}]}, [{:text, "World", []}]}]
 ```
