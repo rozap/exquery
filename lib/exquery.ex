@@ -146,14 +146,11 @@ defmodule Exquery do
     ff_until "<#{unquote(tag)}", {:doc, :none}, do: ff(r, {{:doc, :self_closing}, unquote(tag), []}, acc)
   end)
 
-  ff_until "<!--", {:doc, :none}, do: ff(r,               {{:doc, :comment},   "", []},  acc)
-  ff_until "</"  , {:doc, :none}, do: ff(String.strip(r), {{:doc, :close_tag}, "", []},  acc)
-  ff_until "<!"  , {:doc, :none}, do: ff(String.strip(r), {{:doc, :doctype},   "", []},  acc)
-  ff_until "<"   , {:doc, :none}, do: ff(String.strip(r), {{:doc, :open_tag},  "", []},  acc)
-
-  # ff_until :any, {:doc, :css}, do: ff(r, {{:doc, :css}, head, []}, acc)
-  ff_until :any, {:doc, :none},  do: ff(r, {{:doc, :text}, head, []}, acc)
-
+  ff_until "<!--", {:doc, :none}, do: ff(r, {{:doc, :comment},   "", []},  acc)
+  ff_until "</"  , {:doc, :none}, do: ff(r, {{:doc, :close_tag}, "", []},  acc)
+  ff_until "<!"  , {:doc, :none}, do: ff(r, {{:doc, :doctype},   "", []},  acc)
+  ff_until "<"   , {:doc, :none}, do: ff(r, {{:doc, :open_tag},  "", []},  acc)
+  ff_until :any,   {:doc, :none}, do: ff(r, {{:doc, :text}, head, []}, acc)
 
 
   ff_until "<"  ,   {:doc, :any} do

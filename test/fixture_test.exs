@@ -49,4 +49,20 @@ defmodule FixtureTest do
 
   end
 
+
+  @tag timeout: 500
+  test "can tokenize in a reasonable amount of time" do
+    tree = "large"
+    |> fixture
+    |> E.tokenize
+  end
+
+  @tag timeout: 1000
+  test "can treeify in a reasonable amount of time" do
+    tree = "large"
+    |> fixture
+    |> E.tree
+  end
+
+
 end
