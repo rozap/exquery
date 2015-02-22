@@ -1,7 +1,7 @@
 defmodule ExqueryTest.Tokenizer do
   use ExUnit.Case
   alias Exquery, as: E
-  
+  doctest Exquery
 
   test "can tokenize basic html" do
     assert E.tokenize("<div>hello >   </div>") ==

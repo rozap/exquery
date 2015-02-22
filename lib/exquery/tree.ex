@@ -14,12 +14,12 @@ defmodule Exquery.Tree do
 
     a = String.to_atom(kind)
 
-    def concise_el({unquote(open), contents, attrs}) do
+    defp concise_el({unquote(open), contents, attrs}) do
       {unquote(a), contents, attrs}
     end
   end)
-  def concise_el({:self_closing, contents, attrs}), do: {:tag, contents, attrs}
-  def concise_el(el), do: el
+  defp concise_el({:self_closing, contents, attrs}), do: {:tag, contents, attrs}
+  defp concise_el(el), do: el
 
   defp is_opening(tag) do
     Enum.find(@pairs, false, fn {t, _} -> t == tag end)
@@ -29,18 +29,18 @@ defmodule Exquery.Tree do
     Enum.find(@pairs, false, fn {_, t} -> t == tag end)
   end
 
-  def to_tree([], _, acc), do: Enum.reverse(acc)
+  defp do_to_tree([], _, acc), do: Enum.reverse(acc)
 
-  def to_tree([{:close_tag, c, _} | rest], [{{:open_tag, c, _} = el, el_acc} | stack], acc) do
-    to_tree(rest, stack, [{concise_el(el), Enum.reverse(acc)} | el_acc])
+  defp do_to_tree([{:close_tag, c, _} | rest], [{{:open_tag, c, _} = el, el_acc} | stack], acc) do
+    do_to_tree(rest, stack, [{concise_el(el), Enum.reverse(acc)} | el_acc])
   end
 
-  def to_tree([{:open_tag, _, _} = el | rest], stack, acc) do
-    to_tree(rest, [{el, acc} | stack], [])
+  defp do_to_tree([{:open_tag, _, _} = el | rest], stack, acc) do
+    do_to_tree(rest, [{el, acc} | stack], [])
   end
 
-  def to_tree([el | rest], stack, acc) do
-    to_tree(rest, stack, [concise_el(el) | acc])
+  defp do_to_tree([el | rest], stack, acc) do
+    do_to_tree(rest, stack, [concise_el(el) | acc])
   end
 
   #
@@ -48,7 +48,7 @@ defmodule Exquery.Tree do
   #
 
   def to_tree(tokens) do
-    to_tree(tokens, [], [])
+    do_to_tree(tokens, [], [])
   end
 
 

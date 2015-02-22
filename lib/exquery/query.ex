@@ -21,8 +21,8 @@ defmodule Exquery.Query do
 
 
 
-  def all([], _, acc), do: Enum.reverse(acc)
-  def all(tree, {kind, contents, kv} = spec, acc) do
+  defp find_all([], _, acc), do: Enum.reverse(acc)
+  defp find_all(tree, {kind, contents, kv} = spec, acc) do
     new_acc = Enum.reduce(tree, acc, fn(el, a) ->
       if matches?(el, spec) do
         [el | a]
@@ -34,11 +34,74 @@ defmodule Exquery.Query do
     tree
     |> Enum.map(&(children_of &1))
     |> List.flatten
-    |> all(spec, new_acc)
+    |> find_all(spec, new_acc)
   end
-  def all(tree, spec), do: all(tree, spec, [])
 
 
+  @doc ~S"""
+    Find the all elements in the tree that matche the spec.
+    
+
+    A tree is an HTML tree given from `Exquery.tree/1`
+    A spec is an HTML elemement, which a three element tuple
+    of the element type, contents, and attributes. 
+    `<div id="foo"></div>` would look like `{:tag, "div", [{"id", "foo"}]}`
+
+    You may pass `:any` in for the element type and element contents to select 
+    any element. 
+
+    Examples: 
+      iex> "<div id=\"foo\"><div id=\"bar\">hi</div></div>" |> Exquery.tree |> Exquery.Query.all({:tag, "div", []})
+      [
+        {{:tag, "div", [{"id", "foo"}]}, [
+          {{:tag, "div", [{"id", "bar"}]}, [
+            {:text, "hi", []}
+          ]}
+        ]},
+        {{:tag, "div", [{"id", "bar"}]}, [
+          {:text, "hi", []}
+        ]}
+      ]
+
+      iex> "<div id=\"foo\"><div id=\"bar\">hi</div></div>" |> Exquery.tree |> Exquery.Query.all({:tag, "div", [{"id", "bar"}]})
+      [{{:tag, "div", [{"id", "bar"}]}, [{:text, "hi", []}]}]
+
+      iex> "<div id=\"foo\"><div id=\"bar\">hi</div></div>" |> Exquery.tree |> Exquery.Query.all({:tag, "div", [{"id", "nope"}]})
+      []
+
+  """
+  def all(tree, spec), do: find_all(tree, spec, [])
+
+  @doc ~S"""
+    Find the first element in the tree that matches the spec.
+    
+
+    A tree is an HTML tree given from `Exquery.tree/1`
+    A spec is an HTML elemement, which a three element tuple
+    of the element type, contents, and attributes. 
+    `<div id="foo"></div>` would look like `{:tag, "div", [{"id", "foo"}]}`
+
+    You may pass `:any` in for the element type and element contents to select 
+    any element. 
+
+    Examples: 
+      iex> "<div id=\"foo\"><a id=\"bar\">hi</a></div>" |> Exquery.tree |> Exquery.Query.one({:tag, "a", [{"id", "bar"}]})
+      {{:tag, "a", [{"id", "bar"}]}, [{:text, "hi", []}]}
+
+      iex> "<div id=\"foo\"><a id=\"bar\">hi</a></div>" |> Exquery.tree |> Exquery.Query.one({:tag, "a", []})
+      {{:tag, "a", [{"id", "bar"}]}, [{:text, "hi", []}]}
+
+      iex> "<div id=\"foo\"><a id=\"bar\">hi</a></div>" |> Exquery.tree |> Exquery.Query.one({:tag, :any, [{"id", "bar"}]})
+      {{:tag, "a", [{"id", "bar"}]}, [{:text, "hi", []}]}
+
+      iex> "<div id=\"foo\"><a id=\"bar\">hi</a></div>" |> Exquery.tree |> Exquery.Query.one({:any, :any, [{"id", "bar"}]})
+      {{:tag, "a", [{"id", "bar"}]}, [{:text, "hi", []}]}
+
+      iex> "<div id=\"foo\"><a id=\"bar\">hi</a></div>" |> Exquery.tree |> Exquery.Query.one({:any, :any, [{"id", "does-not-exist"}]})
+      nil
+
+
+  """
   def one([], _), do: nil
   def one(tree, {kind, contents, kv} = spec) do
     el = Enum.find(tree, false, fn el -> matches?(el, spec) end)

@@ -166,10 +166,46 @@ defmodule Exquery do
   end
 
 
-  def tokenize({text, acc}), do: ff(text, @new_token, acc)
-  def tokenize(text), do: tokenize({text, []})
+  @doc ~S"""
+  Turns the text into a flat list of tokens. You probably want to use
+  `Exquery.tree/1` if you actually want to find elements in the HTML
+  tree.
+
+  ## Examples
+      iex> Exquery.tokenize("<div><input></div>")
+      [{:open_tag, "div", []}, {:self_closing, "input", []}, {:close_tag, "div", []}]
+
+      iex> Exquery.tokenize(";_;")
+      [{:text, ";_;", []}]
+  """
+  def tokenize(text), do: ff(text, @new_token, [])
 
 
+  @doc ~S"""
+  Turns the text into a tree which can then be queried by the functions
+  in the `Exquery.Query` module.
+
+  A tree is a list of tuples where the first element of the tuple is an 
+  HTML element, and the second element of the tuple is its children.
+
+  An HTML is the element name (:tag, :script, :text, etc), its contents, 
+  and a list of its attributes
+  
+  ## Examples
+  
+      #h1 is a child of div, and "hi" is a child of h1
+      iex> Exquery.tree("<div><h1>hi</h1></div>")
+      [{{:tag, "div", []}, [{{:tag, "h1", []}, [{:text, "hi", []}]}]}]
+
+      #:text elements can't have children
+      iex> Exquery.tree("something")
+      [{:text, "something", []}]
+
+      #This has no children
+      iex> Exquery.tree("<div></div>")
+      [{{:tag, "div", []}, []}]
+
+  """
   def tree(text) do
     text
     |> tokenize

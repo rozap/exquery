@@ -2,6 +2,7 @@ defmodule QueryTest do
   use ExUnit.Case
   alias Exquery.Query, as: Q
   import ExqueryTest.Helpers
+  doctest Exquery.Query
 
   setup_all do
     tree = "no_js_css"

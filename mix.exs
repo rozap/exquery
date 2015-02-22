@@ -1,13 +1,22 @@
 defmodule Exquery.Mixfile do
   use Mix.Project
 
+  @version "0.0.5"
+
   def project do
-    [app: :exquery,
-     version: "0.0.3",
-     elixir: "~> 1.0",
-     description: description,
-     package: package,
-     deps: deps]
+    [
+      app: :exquery,
+      version: @version,
+      elixir: "~> 1.0",
+      description: description,
+      package: package,
+      deps: deps,
+      docs: [
+        readme: "README.md", main: "README",
+        source_ref: "v#{@version}",
+        source_url: "https://github.com/rozap/exquery"
+      ]
+   ]
   end
 
   def application do
@@ -32,6 +41,9 @@ defmodule Exquery.Mixfile do
   end
 
   defp deps do
-    []
+    [
+      {:earmark, "~> 0.1.13"},
+      {:ex_doc, "~> 0.7"}
+    ]
   end
 end
