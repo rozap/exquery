@@ -2,7 +2,7 @@ defmodule Exquery do
   require Exquery.Helpers
   import Exquery.Helpers
   alias Exquery.Tree
-  @spaces [" ", "\n", "\t", "\r"]
+  @spaces [" ", "\n", "\t", "\r", "&nbsp;"]
   #yes this doesn't handle all cases..like StYlE
   #need a better way to deal with cases
   @styles ["<style", "<STYLE"]
@@ -26,6 +26,8 @@ defmodule Exquery do
     "track",
     "wbr"
   ]
+
+  @case_insensitive [:open_tag, :close_tag, :open_style, :close_style, :open_script, :close_script]
 
 
   defp new_token(mode) do
@@ -84,6 +86,10 @@ defmodule Exquery do
       "" -> acc
       _ -> [tag | acc]
     end
+  end
+  defp push_tag({tag, contents, attrs}, acc) when tag in @case_insensitive do 
+    contents = String.downcase(contents)
+    [{tag, contents, attrs} | acc]
   end
   defp push_tag({_, _, _} = tag, acc), do: [tag | acc]
 

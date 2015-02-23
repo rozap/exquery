@@ -52,22 +52,13 @@ defmodule QueryTest do
     } == h1
   end
 
-  test "can find the first element by tag", %{tree: tree} do
-    h1 = Q.one(tree, {:tag, "h1", []})
-    assert {{:tag, "h1", [
-      {"lang", "en"}, 
-      {"class", "firstHeading"}, 
-      {"id", "firstHeading"}]},
-      
-      [{:text, "Elixir (programming language)", []}]
-    } == h1
-  end
-
 
   test "can find element by tag and attrs", %{tree: tree} do
     div = Q.one(tree, {:tag, "div", [{"style", "clear:both"}]})
     assert div == {{:tag, "div", [{"style", "clear:both"}]}, []}
   end
+
+
 
 
 

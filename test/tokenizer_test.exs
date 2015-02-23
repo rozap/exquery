@@ -349,4 +349,19 @@ defmodule ExqueryTest.Tokenizer do
   end
 
 
+  test "converts tags to lowercase" do
+    assert E.tokenize(String.strip("""
+      <DIV>
+        <H1>WHY ARE WE YELLING</H1>
+      </DIV>
+    """)) == [
+      {:open_tag, "div", []}, 
+        {:open_tag, "h1", []},
+          {:text, "WHY ARE WE YELLING", []}, 
+        {:close_tag, "h1", []},
+      {:close_tag, "div", []}
+    ]
+  end
+
+
 end
