@@ -27,7 +27,7 @@ defmodule Exquery do
     "wbr"
   ]
 
-  @case_insensitive [:open_tag, :close_tag, :open_style, :close_style, :open_script, :close_script]
+  @case_insensitive [:open_tag, :close_tag, :open_style, :close_style, :open_script, :close_script, :self_closing]
 
 
   defp new_token(mode) do
@@ -149,6 +149,7 @@ defmodule Exquery do
   ff_until "</script", {:doc, :js},           do: ff(r, new_token(:close_script), push_tag({:js, current, attributes}, acc)) 
 
   Enum.each(@self_closing, fn tag ->
+    ff_until "<#{unquote(String.upcase(tag))}", {:doc, :none}, do: ff(r, {{:doc, :self_closing}, unquote(tag), []}, acc)
     ff_until "<#{unquote(tag)}", {:doc, :none}, do: ff(r, {{:doc, :self_closing}, unquote(tag), []}, acc)
   end)
 

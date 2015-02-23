@@ -59,6 +59,17 @@ defmodule ExqueryTest.Tokenizer do
         {:self_closing, "input", [{"value", "hello"}]},
       {:close_tag, "div", []}
     ]
+    assert E.tokenize(String.strip("""
+      <div>
+        <IMG src="foo.jpg">
+        <INPUT value="hello">
+      </div>
+    """)) == [
+      {:open_tag, "div", []},
+        {:self_closing, "img", [{"src", "foo.jpg"}]},
+        {:self_closing, "input", [{"value", "hello"}]},
+      {:close_tag, "div", []}
+    ]
   end
 
   test "can handle closed self closing tags" do
