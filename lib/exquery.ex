@@ -24,7 +24,8 @@ defmodule Exquery do
     "param",
     "source",
     "track",
-    "wbr"
+    "wbr",
+    "p"
   ]
 
   @case_insensitive [:open_tag, :close_tag, :open_style, :close_style, :open_script, :close_script, :self_closing]
