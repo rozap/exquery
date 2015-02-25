@@ -65,4 +65,33 @@ defmodule FixtureTest do
   end
 
 
+  test "capital tags" do
+    tree = "capitals"
+    |> fixture
+    |> E.tree
+    |> Exquery.Query.all({:any, "p", []})
+    
+    assert tree == [
+      {{:tag, "p",
+         [{"style", "TEXT-ALIGN: left; MARGIN: 0pt; LINE-HEIGHT: 1.25"}, {"id", "PARA42"}]},
+          [{{:tag, "font",
+           [{"style",
+             "FONT-SIZE: 10pt; FONT-FAMILY: Times New Roman, Times, serif"}]},
+          [{:text, "WTN Services LLC (California)", []}]}]},
+      {{:tag, "p",
+        [{"style", "TEXT-ALIGN: left; MARGIN: 0pt; LINE-HEIGHT: 1.25"},{"id", "PARA43"}]},
+       [{{:tag, "font",
+          [{"style",
+            "FONT-SIZE: 10pt; FONT-FAMILY: Times New Roman, Times, serif"}]},
+         [{:text, "WTN Marketing Agent LLC (Delaware)", []}]}]},
+      {{:tag, "p",
+        [{"style", "TEXT-ALIGN: left; MARGIN: 0pt; LINE-HEIGHT: 1.25"},
+         {"id", "PARA44"}]},
+       [{{:tag, "font",
+          [{"style",
+            "FONT-SIZE: 10pt; FONT-FAMILY: Times New Roman, Times, serif"}]},
+         [{:text, "Colonial Gifts Ltd. (UK)", []}]}]}]
+
+  end
+
 end
