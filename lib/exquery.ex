@@ -115,6 +115,10 @@ defmodule Exquery do
   end)
 
 
+
+
+
+
   # CSS handling. Ignore tags between comments.
   ff_until "/*", {:doc, :css},         do: ff(all, {{:doc, :css_comment}, current, attributes} ,acc)
   ff_until "*/", {:doc, :css_comment}, do: ff(all, {{:doc, :css}, current, attributes} ,acc)

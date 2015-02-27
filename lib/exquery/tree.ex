@@ -29,10 +29,63 @@ defmodule Exquery.Tree do
     Enum.find(@pairs, false, fn {_, t} -> t == tag end)
   end
 
-  defp do_to_tree([], _, acc), do: Enum.reverse(acc)
+  defp push_el(el, acc, el_acc) do
+    [{concise_el(el), Enum.reverse(acc)} | el_acc]
+  end
+
+  defp do_to_tree([], stack, acc) do
+    Enum.reverse(acc)
+  end
+
+
+  ##
+  # This handles a lot of the common cases here
+  # http://www.w3.org/TR/html5/syntax.html#optional-tags
+  # The first item in the tuple is the tag name, which may lack
+  # a closing tag if it is followed by any of the elements in the 
+  # list of the second tuple item
+  # 
+  # TODO: colgroups and optional start tags? ugh..
+  # 
+  @optional_closings [
+    {"p", ["address", "article", "aside", "blockquote",
+     "div", "dl", "fieldset", "footer", "form", 
+     "h1", "h2", "h3", "h4", "h5", "h6", "header", 
+     "hgroup", "hr", "main", "nav", "ol", "p", "pre", 
+     "section", "table", "ul"]},
+    {"dd",  ["dd", "dt"]},
+    {"dt",  ["dd", "dt"]},
+    {"li",  ["li"]},
+    {"rb",  ["rb", "rt", "rtc", "rp"]},
+    {"rt",  ["rb", "rt", "rtc", "rp"]},
+    {"rtc", ["rb", "rt", "rtc", "rp"]},
+    {"rp",  ["rb", "rt", "rtc", "rp"]},
+    {"optgroup", ["optgroup"]},
+    {"option", ["option", "optgroup"]},
+    {"thead", ["tbody", "tfoot"]},
+    {"tbody", ["tbody", "tfoot"]},
+    {"tfoot", ["tbody"]},
+    {"tr", ["tr"]},
+    {"td", ["td", "th"]},
+    {"th", ["td", "th"]}
+
+  ]
+
+  Enum.each(@optional_closings, fn {subject, closings} ->
+    Enum.each(closings, fn closing ->
+      defp do_to_tree([{tag, unquote(closing), _} | _] = current, [{{:open_tag, unquote(subject), _} = el, el_acc} | stack], acc) when tag in [:self_closing, :open_tag] do
+        do_to_tree(current, stack, push_el(el, acc, el_acc))
+      end
+    end)
+  end)
+
+
+
+
+
 
   defp do_to_tree([{:close_tag, c, _} | rest], [{{:open_tag, c, _} = el, el_acc} | stack], acc) do
-    do_to_tree(rest, stack, [{concise_el(el), Enum.reverse(acc)} | el_acc])
+    do_to_tree(rest, stack, push_el(el, acc, el_acc))
   end
 
   defp do_to_tree([{:open_tag, _, _} = el | rest], stack, acc) do

@@ -94,4 +94,27 @@ defmodule FixtureTest do
 
   end
 
+
+  test "optional closing tags" do
+    tree = "no_closing"
+    |> fixture
+    |> E.tree
+    
+    assert tree == [
+      {{:tag, "tr", []}, 
+        [{:text, "a", []}]}, 
+      {{:tag, "tr", []}, 
+        [{:text, "b", []}]},
+      {{:tag, "p", [{"style", "page-break-before:always"}]}, []},
+      {:tag, "hr", [{"class", "lol"}]}, 
+      {{:tag, "tr", []}, 
+        [{:text, "c", []}]},
+      {{:tag, "tr", []}, 
+        [{:text, "d", []}]}
+    ]
+
+
+
+  end
+
 end
