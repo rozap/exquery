@@ -46,6 +46,45 @@ This evaluates to:
  {{:tag, "li", [{"class", "two-fish"}]}, [{:text, "World", []}]}]
 ```
 
+You can select a sibling using `before/3 and `next/3`
+```elixir
+"""
+<div class="red-fish">
+  <ul class="blue-fish">
+    <li class="one-fish">Hello</li>
+    <li class="two-fish">World</li>
+  </ul>
+</div>
+"""
+|> Exquery.tree
+|> Exquery.Query.next({:tag, "li", []})
+```
+
+This evaluates to:
+```elixir
+{{:tag, "li", [{"class", "two-fish"}]}, [{:text, "World", []}]}
+```
+
+```elixir
+"""
+<div class="red-fish">
+  <ul class="blue-fish">
+    <li class="one-fish">Hello</li>
+    <li class="two-fish">World</li>
+  </ul>
+</div>
+"""
+|> Exquery.tree
+|> Exquery.Query.before({:tag, "li", [{"class", "two-fish"}]})
+```
+
+This evaluates to:
+```elixir
+{{:tag, "li", [{"class", "one-fish"}]}, [{:text, "Hello", []}]}
+```
+
+
+
 
 #### Todo: 
 *  Documentation

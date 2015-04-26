@@ -87,5 +87,4 @@ defmodule QueryTest do
     assert Q.next(tree, {:tag, "body", []}) == nil
   end
 
-
 end
