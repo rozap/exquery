@@ -1,9 +1,6 @@
 defmodule TreeTest do
   use ExUnit.Case
   alias Exquery.Tree, as: Tree
-  import ExqueryTest.Helpers
-  import ExUnit.CaptureIO
-
 
   test "simple tree" do
     r = Tree.to_tree([

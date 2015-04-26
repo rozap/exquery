@@ -52,14 +52,14 @@ defmodule FixtureTest do
 
   @tag timeout: 500
   test "can tokenize in a reasonable amount of time" do
-    tree = "large"
+    "large"
     |> fixture
     |> E.tokenize
   end
 
   @tag timeout: 1000
   test "can treeify in a reasonable amount of time" do
-    tree = "large"
+    "large"
     |> fixture
     |> E.tree
   end

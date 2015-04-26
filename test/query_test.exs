@@ -58,10 +58,34 @@ defmodule QueryTest do
     assert div == {{:tag, "div", [{"style", "clear:both"}]}, []}
   end
 
+  test "can get the before element", %{tree: tree} do
+    a = Q.before(tree, {:tag, "div", [{"id", "siteNotice"}]})
+    assert a == {{:tag, "a", [{"id", "top"}]}, []}
+  end
+
+  test "can get the before element n element", %{tree: tree} do
+    a = Q.before(tree, {:tag, "div", [{"id", "bodyContent"}]}, 4)
+    assert a == {{:tag, "a", [{"id", "top"}]}, []}
+  end
+
+  test "gives nil when before doesn't exist", %{tree: tree} do
+    assert Q.before(tree, {:tag, "a", [{"id", "top"}]}) == nil
+  end
 
 
+  test "can get the element after", %{tree: tree} do
+    a = Q.next(tree, {:tag, "div", [{"id", "siteNotice"}]})
+    assert a == {{:tag, "div", [{"class", "mw-indicators"}]}, []}
+  end
 
+  test "can get the element n after element", %{tree: tree} do
+    {el, _kids} = Q.next(tree, {:tag, "a", [{"id", "top"}]}, 4)
+    assert el == {:tag, "div", [{"class", "mw-body-content"}, {"id", "bodyContent"}]}
+  end
 
+  test "gives nil when next doesn't exist", %{tree: tree} do
+    assert Q.next(tree, {:tag, "body", []}) == nil
+  end
 
 
 end
