@@ -11,6 +11,5 @@ before_script:
   - mix deps.get --only test
 script:
   - mix test
-  - cd installer && mix test
 after_script:
   - mix deps.get --only docs
