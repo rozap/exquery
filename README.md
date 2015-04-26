@@ -5,6 +5,8 @@ A simple Elixir DOM library for building a tree from an HTML string and then sel
 
 [![Build Status](https://travis-ci.org/rozap/exquery.svg?branch=master)](https://travis-ci.org/rozap/exquery)
 
+[full documentation at hex.pm](http://hexdocs.pm/exquery/0.0.10/)
+
 ### Example
 
 #### select an element with `one/2`
