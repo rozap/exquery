@@ -68,6 +68,7 @@ This evaluates to:
 {{:tag, "li", [{"class", "two-fish"}]}, [{:text, "World", []}]}
 ```
 
+or
 ```elixir
 """
 <div class="red-fish">
