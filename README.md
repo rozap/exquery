@@ -6,6 +6,7 @@ A simple Elixir DOM library for building a tree from an HTML string and then sel
 
 ### Example
 
+#### select an element with `one/2`
 Selecting an `li`  `:tag` with specific attrs using `one/2`
 ```elixir
 """
@@ -26,6 +27,7 @@ This evaluates to:
 {{:tag, "li", [{"class", "one-fish"}]}, [{:text, "Hello", []}]}
 ```
 
+#### select all elements with `all/2`
 Similarly, you can select all elements using `all/2`
 ```elixir
 """
@@ -46,6 +48,7 @@ This evaluates to:
  {{:tag, "li", [{"class", "two-fish"}]}, [{:text, "World", []}]}]
 ```
 
+#### select siblings with `before/3` and `next/3`
 You can select a sibling using `before/3 and `next/3`
 ```elixir
 """
