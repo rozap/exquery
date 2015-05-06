@@ -87,4 +87,34 @@ defmodule QueryTest do
     assert Q.next(tree, {:tag, "body", []}) == nil
   end
 
+
+
+  test "flat css class to spec", _ do
+    assert Q.css_to_spec(".foo") == {:and, [{:class, "foo"}]}
+    assert Q.css_to_spec(".foo.bar") == {:and, [{:class, "foo"}, {:class, "bar"}]}
+    assert Q.css_to_spec(".foo.bar.baz") == {:and, [{:class, "foo"}, {:class, "bar"}, {:class, "baz"}]}
+  end
+
+  test "flat css id to spec", _ do
+    assert Q.css_to_spec("#foo") == {:and, [{:id, "foo"}]}
+    assert Q.css_to_spec("#foo#bar") == {:and, [{:id, "foo"}, {:id, "bar"}]}
+    assert Q.css_to_spec("#foo#bar#baz") == {:and, [{:id, "foo"}, {:id, "bar"}, {:id, "baz"}]}
+  end
+
+  test "css with direct descendents", _ do
+    assert Q.css_to_spec("#foo>#bar") == {:direct, {:id, "foo"}, {:and, [{:id, "bar"}]}}
+    assert Q.css_to_spec("#foo>#bar>#baz") == {
+      :direct, {:id, "foo"}, 
+      {
+        :direct, {:id, "bar"}, 
+        {
+          :and, [{:id, "baz"}]
+        }
+      }
+    }
+
+  end
+
+
+
 end

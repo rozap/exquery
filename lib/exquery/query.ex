@@ -208,4 +208,49 @@ defmodule Exquery.Query do
   end
 
 
+  ## CSS transforms
+  #
+  @group_identifiers [{"#", :id}, {".", :class}]
+  @level_identifiers [{">", :direct}, {" ", :indirect}]
+
+  defp upto_delimiter("", acc), do: {acc, ""}
+
+  Enum.each(@level_identifiers, fn {token, hierarchy} ->
+    defp upto_delimiter(unquote(token) <> rest, acc) do
+      {unquote(hierarchy), acc, rest}
+    end
+  end)
+
+
+  Enum.each(@group_identifiers, fn {token, _} ->
+    defp upto_delimiter(unquote(token) <> rest, acc) do
+      {acc, unquote(token) <> rest}
+    end
+  end)
+
+  defp upto_delimiter(<<t::binary-size(1), rest::binary>>, acc), do: upto_delimiter(rest, acc <> t)
+  defp upto_delimiter(css), do: upto_delimiter(css, "")
+
+
+  def css_to_spec("", acc), do: acc
+  Enum.each(@group_identifiers, fn {token, ident} ->
+    def css_to_spec(unquote(token) <> rest, []) do
+      case upto_delimiter(rest) do
+        {name, rest} -> {:and, Enum.reverse(css_to_spec(rest, [{unquote(ident), name}]))}
+        {level, name, rest} -> {level, {unquote(ident), name}, css_to_spec(rest)}
+      end
+
+    end
+
+    def css_to_spec(unquote(token) <> rest, acc) do
+      case upto_delimiter(rest) do
+        {name, rest} -> css_to_spec(rest, [{unquote(ident), name} | acc])
+        {level, name, rest} -> {level, {unquote(ident), name}, css_to_spec(rest)}
+      end
+    end
+  end)
+
+  def css_to_spec(css), do: css_to_spec(css, [])
+
+
 end
