@@ -1,6 +1,7 @@
 defmodule Exquery.Query do
   import Exquery.Helpers
 
+  defp matches?({idx, el}, spec) when is_integer(idx), do: matches?(el, spec)
   defp matches?({_, _, attrs}, {:any, :any, kvs}) do
     Enum.all?(kvs, fn kv -> Enum.member?(attrs, kv) end)
   end  
@@ -14,9 +15,10 @@ defmodule Exquery.Query do
   defp matches?({_, _, _}, {_, _, _}), do: false
   defp matches?({el, children}, kv), do: matches?(el, kv)
 
-
+  defp children_of({idx, {_el, children}}) when is_integer(idx), do: children
+  defp children_of({idx, {_, _, _} = _el}) when is_integer(idx), do: []
   defp children_of({_, _, _}), do: []
-  defp children_of({el, children}), do: children 
+  defp children_of({_el, children}), do: children 
 
 
 
@@ -208,49 +210,159 @@ defmodule Exquery.Query do
   end
 
 
+  defp debug(tree, tag) do
+    IO.puts "#{tag}:"
+    unapply_ids(tree) |> Exquery.Tree.print
+    tree
+  end
+
+  defp from_css(tree, {:direct, {spec, direct_spec}}, whole_spec) do
+
+    subspec = case direct_spec do
+      {:indirect, {em, _}} -> em
+      {:direct, {em, _}} -> em
+      em -> em
+    end
+
+    tree
+    |> all(spec)
+    |> Enum.map(
+      fn subtree -> 
+        subtree
+        |> children_of
+        |> Enum.filter(fn child -> matches?(child, subspec) end)
+        |> from_css(direct_spec, whole_spec) 
+      end)
+    |> List.flatten
+    |> Enum.uniq
+  end
+
+  #TODO: make this not as shitty....probably like O(n^n^n^n) or something
+  defp from_css(tree, {:indirect, {spec, subspec}}, whole_spec) do
+    Enum.reduce(tree, [], fn el, acc ->
+
+      subtree = children_of(el)
+
+      subspec_matches = if matches?(el, spec) do
+        from_css(subtree, subspec, whole_spec)
+      else
+        []
+      end
+
+      subtree_matches = from_css(subtree, whole_spec, whole_spec)
+
+      Enum.uniq(subspec_matches ++ subtree_matches) ++ acc
+
+    end)
+  end
+
+  defp from_css(tree, spec, _), do: tree |> all(spec)
+
+
+
+
+  def apply_ids([], acc, idx), do: {idx, acc |> Enum.reverse}
+  def apply_ids([{el, children} | rest], acc, idx) do
+    {idx, subtree} = apply_ids(children, [], idx)
+    apply_ids(rest, [{idx, {el, subtree}} | acc], idx + 1)
+  end
+  def apply_ids([el | rest], acc, idx) do
+    apply_ids(rest, [{idx, el} | acc], idx + 1)
+  end
+  def apply_ids(tree) do
+    {_, res} = apply_ids(tree, [], 0)
+    res
+  end
+
+
+  def unapply_ids([], acc), do: acc |> Enum.reverse
+  def unapply_ids([{_, {el, children}} | rest], acc) do
+    subtree = unapply_ids(children, [])
+    unapply_ids(rest, [{el, subtree} | acc])
+  end
+  def unapply_ids([{_, el} | rest], acc), do: unapply_ids(rest, [el | acc])
+  def unapply_ids(tree), do: unapply_ids(tree, [])
+
+
+  def css(tree, selection) do
+    spec = css_to_spec(selection)
+    
+    r = tree
+    |> apply_ids
+    |> from_css(spec, spec)
+    |> unapply_ids
+  end
+
+
   ## CSS transforms
-  #
-  @group_identifiers [{"#", :id}, {".", :class}]
+  
+
+  @group_identifiers [{"#", "id"}, {".", "class"}, {" ", :tag}]
   @level_identifiers [{">", :direct}, {" ", :indirect}]
 
-  defp upto_delimiter("", acc), do: {acc, ""}
 
-  Enum.each(@level_identifiers, fn {token, hierarchy} ->
-    defp upto_delimiter(unquote(token) <> rest, acc) do
-      {unquote(hierarchy), acc, rest}
+  defp strip_toks(toks) do 
+    toks
+    |> Enum.map(&(String.strip &1))
+    |> Enum.filter(&(&1 != ""))
+  end
+
+  def normalize_css(css) do
+    ids = Enum.map(@level_identifiers, fn {i, _} -> i end)
+
+    css
+    |> String.split(">")
+    |> strip_toks
+    |> Enum.join(">")
+    |> String.split(" ")
+    |> strip_toks
+    |> Enum.join(" ")
+  end
+
+
+  defp finish_qualifiers(qualifiers) do
+    all = qualifiers |> Enum.reverse
+    attrs = Keyword.drop(all, [:tag])
+
+    case Keyword.get(all, :tag) do
+      "" -> {:tag, :any, attrs}
+      tag -> {:tag, tag, attrs}
     end
-  end)
+  end
+
+  defp push_acc(acc, qualifiers) do
+    [acc | qualifiers] |> finish_qualifiers
+  end
+
+  def css_to_spec("", "", qualifiers), do: finish_qualifiers(qualifiers)
+  def css_to_spec("", acc, qualifiers), do: push_acc(acc, qualifiers)
+  
+
+  def css_to_spec(" " <> rest, acc, qualifiers) do
+    {:indirect, {push_acc(acc, qualifiers), css_to_spec(rest)}}
+  end
+
+  def css_to_spec(">" <> rest, acc, qualifiers) do
+    {:direct, {push_acc(acc, qualifiers), css_to_spec(rest)}}
+  end
 
 
-  Enum.each(@group_identifiers, fn {token, _} ->
-    defp upto_delimiter(unquote(token) <> rest, acc) do
-      {acc, unquote(token) <> rest}
-    end
-  end)
-
-  defp upto_delimiter(<<t::binary-size(1), rest::binary>>, acc), do: upto_delimiter(rest, acc <> t)
-  defp upto_delimiter(css), do: upto_delimiter(css, "")
-
-
-  def css_to_spec("", acc), do: acc
   Enum.each(@group_identifiers, fn {token, ident} ->
-    def css_to_spec(unquote(token) <> rest, []) do
-      case upto_delimiter(rest) do
-        {name, rest} -> {:and, Enum.reverse(css_to_spec(rest, [{unquote(ident), name}]))}
-        {level, name, rest} -> {level, {unquote(ident), name}, css_to_spec(rest)}
-      end
-
-    end
-
-    def css_to_spec(unquote(token) <> rest, acc) do
-      case upto_delimiter(rest) do
-        {name, rest} -> css_to_spec(rest, [{unquote(ident), name} | acc])
-        {level, name, rest} -> {level, {unquote(ident), name}, css_to_spec(rest)}
-      end
+    def css_to_spec(unquote(token) <> rest, acc, qualifiers) do
+      css_to_spec(rest, {unquote(ident), ""}, [acc | qualifiers])
     end
   end)
 
-  def css_to_spec(css), do: css_to_spec(css, [])
+  def css_to_spec(<<head::binary-size(1), rest::binary>>, {ident, acc}, qualifiers) do
+    css_to_spec(rest, {ident, acc <> head}, qualifiers)
+  end
+
+
+  def css_to_spec(css) do 
+    css
+    |> normalize_css
+    |> css_to_spec({:tag, ""}, [])
+  end
 
 
 end

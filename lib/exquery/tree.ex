@@ -120,7 +120,8 @@ defmodule Exquery.Tree do
     attr_string = attrs
     |> Enum.map(fn {key, val} -> "#{key}: #{val}" end)
     |> Enum.join(", ")
-    IO.puts("#{kind}: #{contents} | #{attr_string}")
+
+    IO.puts("#{contents} | #{attr_string}")
   end
 
   def print(tree, spaces \\ 0) do
