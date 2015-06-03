@@ -284,6 +284,20 @@ defmodule Exquery.Query do
   def unapply_ids(tree), do: unapply_ids(tree, [])
 
 
+
+  @doc ~S"""
+    Find the element by css id or class. More complex selections are a wip.
+
+    Examples: 
+      iex> "<div id=\"foo\"></div><div id=\"bar\"></div>" |> Exquery.tree |> Exquery.Query.css("#bar")
+      [{{:tag, "div", [{"id", "bar"}]}, []}]
+      iex> "<div id=\"foo\"></div><div id=\"bar\"></div>" |> Exquery.tree |> Exquery.Query.css("#baz")
+      []
+      iex> "<div id=\"foo\"></div><div id=\"bar\"></div><div class=\"baz\"></div>" |> Exquery.tree |> Exquery.Query.css(".baz")
+      [{{:tag, "div", [{"class", "baz"}]}, []}]
+
+
+  """
   def css(tree, selection) do
     spec = css_to_spec(selection)
     
