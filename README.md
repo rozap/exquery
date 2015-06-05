@@ -3,8 +3,6 @@ Exquery [![Build Status](https://travis-ci.org/rozap/exquery.svg?branch=master)]
 
 A simple Elixir DOM library for building a tree from an HTML string and then selecting elements that lurk within.
 
-
-
 [full documentation at hex.pm](http://hexdocs.pm/exquery/)
 
 ### Example
