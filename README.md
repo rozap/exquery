@@ -7,26 +7,6 @@ A simple Elixir DOM library for building a tree from an HTML string and then sel
 
 ### Example
 
-#### select by elements with `css/2`
-```elixir
-"""
-<div class="red-fish">
-  <ul class="blue-fish">
-    <li class="one-fish">Hello</li>
-    <li class="two-fish">World</li>
-  </ul>
-</div>
-"""
-|> Exquery.tree
-|> Exquery.Query.css(".two-fish")
-```
-
-Evaluates to:
-```elixir
-[{{:tag, "li", [{"class", "two-fish"}]}, [{:text, "World", []}]}]
-```
-
-
 
 #### select an element with `one/2`
 Selecting an `li`  `:tag` with specific attrs using `one/2`
